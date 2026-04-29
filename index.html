@@ -403,6 +403,7 @@
             font-size: 13px;
             margin-top: 20px;
             width: auto;
+            cursor: pointer;
         }
 
         .empty-state {
@@ -435,19 +436,21 @@
 <body>
 
 <div class="app-container">
+    <!-- Tela de Login/Setup -->
     <div id="telaSetup">
         <div class="setup-area">
             <div class="setup-icon"><i class="fas fa-piggy-bank"></i></div>
             <h1>Minhas Finanças Pro</h1>
             <p>Controle total de receitas, gastos e compromissos</p>
-            <input type="text" id="nomeUsuario" class="input-modern" placeholder="Seu nome">
-            <button class="btn-gradient" onclick="iniciarApp()">Começar <i class="fas fa-arrow-right"></i></button>
+            <input type="text" id="nomeUsuario" class="input-modern" placeholder="Digite seu nome">
+            <button class="btn-gradient" onclick="iniciarApp()"><i class="fas fa-arrow-right"></i> Entrar no App</button>
             <button class="btn-gradient btn-support" onclick="window.open('https://mpago.la/1nt6kcz', '_blank')">
                 <i class="fas fa-heart"></i> Apoie este projeto
             </button>
         </div>
     </div>
 
+    <!-- App principal -->
     <div id="telaApp" class="hidden">
         <div class="tab-bar">
             <button class="tab-item active" onclick="mudarAba('financas', this)"><i class="fas fa-chart-pie"></i> Finanças</button>
@@ -455,6 +458,7 @@
         </div>
 
         <div class="content-area">
+            <!-- Aba Finanças -->
             <div id="abaFinancas">
                 <div class="saldo-card">
                     <div class="saldo-label">SALDO DISPONÍVEL</div>
@@ -517,6 +521,7 @@
                 <div class="lista-scroll" id="listaTransacoes"></div>
             </div>
 
+            <!-- Aba Compromissos -->
             <div id="abaCompromissos" class="hidden">
                 <div class="chart-box" style="margin-bottom: 20px;">
                     <canvas id="graficoCompromissos" style="max-height: 180px;"></canvas>
@@ -549,17 +554,33 @@
 </div>
 
 <script>
-    let transacoes = JSON.parse(localStorage.getItem('financas_db')) || [];
-    let compromissos = JSON.parse(localStorage.getItem('compromissos_db')) || [];
-    let nomeUser = localStorage.getItem('nome_user') || '';
+    // Dados
+    let transacoes = [];
+    let compromissos = [];
+    let nomeUser = '';
     let graficoIO, graficoCat, graficoComp;
 
+    // Carregar dados do localStorage
+    try {
+        const savedTransacoes = localStorage.getItem('financas_db');
+        const savedCompromissos = localStorage.getItem('compromissos_db');
+        const savedUser = localStorage.getItem('nome_user');
+        
+        if(savedTransacoes) transacoes = JSON.parse(savedTransacoes);
+        if(savedCompromissos) compromissos = JSON.parse(savedCompromissos);
+        if(savedUser) nomeUser = savedUser;
+    } catch(e) {
+        console.log("Erro ao carregar dados:", e);
+    }
+
+    // Função para atualizar data e hora
     function atualizarDataHora() {
         const agora = new Date();
         const dias = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
         const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
         const dataFormatada = `${dias[agora.getDay()]}, ${agora.getDate()} de ${meses[agora.getMonth()]} de ${agora.getFullYear()}`;
         const horaFormatada = agora.toLocaleTimeString('pt-BR');
+        
         const dataElement = document.getElementById('dataAtual');
         const horaElement = document.getElementById('horaAtual');
         if(dataElement) dataElement.innerHTML = `<i class="fas fa-calendar-alt"></i><span>${dataFormatada}</span>`;
@@ -568,38 +589,50 @@
 
     setInterval(atualizarDataHora, 1000);
 
-    if(nomeUser) {
+    // Verificar se já está logado
+    if(nomeUser && nomeUser !== '') {
         document.getElementById('telaSetup').classList.add('hidden');
         document.getElementById('telaApp').classList.remove('hidden');
-        document.getElementById('msgSaudacao').innerHTML = `<i class="fas fa-hand-peace"></i> Olá, ${nomeUser}! Organize suas finanças`;
+        const msgElement = document.getElementById('msgSaudacao');
+        if(msgElement) msgElement.innerHTML = `<i class="fas fa-hand-peace"></i> Olá, ${nomeUser}! Organize suas finanças`;
         atualizarDataHora();
         atualizarTudo();
     }
 
+    // Função de login
     function iniciarApp() {
-        let nome = document.getElementById('nomeUsuario').value.trim();
+        const nome = document.getElementById('nomeUsuario').value.trim();
         if(!nome) {
-            alert("Por favor, digite seu nome.");
+            alert("Por favor, digite seu nome para continuar.");
             return;
         }
+        
         nomeUser = nome;
         localStorage.setItem('nome_user', nome);
+        
         document.getElementById('telaSetup').classList.add('hidden');
         document.getElementById('telaApp').classList.remove('hidden');
-        document.getElementById('msgSaudacao').innerHTML = `<i class="fas fa-hand-peace"></i> Olá, ${nomeUser}! Organize suas finanças`;
+        
+        const msgElement = document.getElementById('msgSaudacao');
+        if(msgElement) msgElement.innerHTML = `<i class="fas fa-hand-peace"></i> Olá, ${nomeUser}! Organize suas finanças`;
+        
         atualizarDataHora();
         atualizarTudo();
     }
 
     function mudarAba(aba, elemento) {
-        document.getElementById('abaFinancas').classList.add('hidden');
-        document.getElementById('abaCompromissos').classList.add('hidden');
+        const abaFinancas = document.getElementById('abaFinancas');
+        const abaCompromissos = document.getElementById('abaCompromissos');
+        
+        if(abaFinancas) abaFinancas.classList.add('hidden');
+        if(abaCompromissos) abaCompromissos.classList.add('hidden');
+        
         document.querySelectorAll('.tab-item').forEach(btn => btn.classList.remove('active'));
         
         if(aba === 'financas') {
-            document.getElementById('abaFinancas').classList.remove('hidden');
+            if(abaFinancas) abaFinancas.classList.remove('hidden');
         } else {
-            document.getElementById('abaCompromissos').classList.remove('hidden');
+            if(abaCompromissos) abaCompromissos.classList.remove('hidden');
             renderizarGraficoCompromissos();
         }
         elemento.classList.add('active');
@@ -624,10 +657,10 @@
     }
 
     function adicionarTransacao() {
-        let desc = document.getElementById('descricao').value.trim();
-        let valor = converterParaNumero(document.getElementById('valor').value);
-        let tipo = document.getElementById('tipoTransacao').value;
-        let categoria = document.getElementById('categoria').value;
+        const desc = document.getElementById('descricao').value.trim();
+        const valor = converterParaNumero(document.getElementById('valor').value);
+        const tipo = document.getElementById('tipoTransacao').value;
+        const categoria = document.getElementById('categoria').value;
 
         if(!desc) return alert("Digite uma descrição!");
         if(valor <= 0) return alert("Valor inválido!");
@@ -642,15 +675,17 @@
         });
 
         localStorage.setItem('financas_db', JSON.stringify(transacoes));
+        
         document.getElementById('descricao').value = '';
         document.getElementById('valor').value = '';
+        
         atualizarTudo();
     }
 
     function adicionarCompromisso() {
-        let desc = document.getElementById('compDesc').value.trim();
-        let valor = converterParaNumero(document.getElementById('compValor').value);
-        let data = document.getElementById('compData').value;
+        const desc = document.getElementById('compDesc').value.trim();
+        const valor = converterParaNumero(document.getElementById('compValor').value);
+        const data = document.getElementById('compData').value;
 
         if(!desc) return alert("Descreva o compromisso!");
         if(valor <= 0) return alert("Valor inválido!");
@@ -665,9 +700,11 @@
         });
 
         localStorage.setItem('compromissos_db', JSON.stringify(compromissos));
+        
         document.getElementById('compDesc').value = '';
         document.getElementById('compValor').value = '';
         document.getElementById('compData').value = '';
+        
         atualizarTudo();
         if(!document.getElementById('abaCompromissos').classList.contains('hidden')) {
             renderizarGraficoCompromissos();
@@ -675,7 +712,7 @@
     }
 
     function alternarPagamento(id) {
-        let compromisso = compromissos.find(c => c.id === id);
+        const compromisso = compromissos.find(c => c.id === id);
         if(compromisso) {
             compromisso.pago = !compromisso.pago;
             localStorage.setItem('compromissos_db', JSON.stringify(compromissos));
@@ -707,7 +744,7 @@
     }
 
     function renderizarFinancas() {
-        let listaDiv = document.getElementById('listaTransacoes');
+        const listaDiv = document.getElementById('listaTransacoes');
         let totalEntrada = 0, totalSaida = 0;
 
         transacoes.forEach(t => {
@@ -715,9 +752,12 @@
             else totalSaida += t.valor;
         });
 
-        let saldo = totalEntrada - totalSaida;
-        document.getElementById('saldoTotal').innerHTML = `R$ ${saldo.toLocaleString('pt-BR')}`;
+        const saldo = totalEntrada - totalSaida;
+        const saldoElement = document.getElementById('saldoTotal');
+        if(saldoElement) saldoElement.innerHTML = `R$ ${saldo.toLocaleString('pt-BR')}`;
 
+        if(!listaDiv) return;
+        
         if(transacoes.length === 0) {
             listaDiv.innerHTML = `<div class="empty-state"><i class="fas fa-wallet" style="font-size: 40px;"></i><p style="margin-top: 10px;">Nenhuma movimentação ainda</p></div>`;
             return;
@@ -725,7 +765,7 @@
 
         listaDiv.innerHTML = '';
         transacoes.forEach(t => {
-            let item = document.createElement('div');
+            const item = document.createElement('div');
             item.className = 'item-card';
             item.innerHTML = `
                 <div class="item-info">
@@ -747,7 +787,9 @@
     }
 
     function renderizarCompromissos() {
-        let listaDiv = document.getElementById('listaCompromissos');
+        const listaDiv = document.getElementById('listaCompromissos');
+        if(!listaDiv) return;
+        
         if(compromissos.length === 0) {
             listaDiv.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-alt" style="font-size: 40px;"></i><p style="margin-top: 10px;">Nenhum compromisso agendado</p></div>`;
             return;
@@ -755,8 +797,8 @@
 
         listaDiv.innerHTML = '';
         compromissos.forEach(c => {
-            let dataFormatada = c.data.split('-').reverse().join('/');
-            let item = document.createElement('div');
+            const dataFormatada = c.data.split('-').reverse().join('/');
+            const item = document.createElement('div');
             item.className = 'item-card';
             item.style.borderLeft = c.pago ? '4px solid #10b981' : '4px solid #f59e0b';
             item.innerHTML = `
@@ -778,8 +820,8 @@
     }
 
     function renderizarGraficosGerais() {
-        let totalEntrada = transacoes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
-        let totalSaida = transacoes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
+        const totalEntrada = transacoes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
+        const totalSaida = transacoes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
 
         const ctxIO = document.getElementById('graficoEntradaSaida')?.getContext('2d');
         if(ctxIO) {
@@ -791,8 +833,8 @@
             });
         }
 
-        let categorias = ['Salário', 'Renda Extra', 'Casa', 'Alimentação', 'Transporte', 'Saúde', 'Lazer', 'Outros'];
-        let gastosCat = categorias.map(cat => transacoes.filter(t => t.tipo === 'saida' && t.categoria === cat).reduce((acc, t) => acc + t.valor, 0));
+        const categorias = ['Salário', 'Renda Extra', 'Casa', 'Alimentação', 'Transporte', 'Saúde', 'Lazer', 'Outros'];
+        const gastosCat = categorias.map(cat => transacoes.filter(t => t.tipo === 'saida' && t.categoria === cat).reduce((acc, t) => acc + t.valor, 0));
         const ctxCat = document.getElementById('graficoCategorias')?.getContext('2d');
         if(ctxCat) {
             if(graficoCat) graficoCat.destroy();
@@ -840,27 +882,15 @@
     }
 
     function gerarRelatorioPDF() {
-        const element = document.createElement('div');
-        const agora = new Date();
         const totalEntrada = transacoes.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
         const totalSaida = transacoes.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);
         const saldo = totalEntrada - totalSaida;
+        const agora = new Date();
         
-        element.innerHTML = `
+        const relatorioHTML = `
             <div style="padding: 30px; font-family: 'Inter', sans-serif; max-width: 600px;">
                 <h1 style="color: #2563eb; margin-bottom: 10px;">📊 Relatório Financeiro</h1>
+                <p style="color: #64748b; margin-bottom: 20px;">Usuário: ${nomeUser}</p>
                 <p style="color: #64748b; margin-bottom: 20px;">Gerado em: ${agora.toLocaleString('pt-BR')}</p>
                 <hr style="margin: 20px 0;">
-                <div style="background: #f8fafc; padding: 20px; border-radius: 16px; margin-bottom: 20px;">
-                    <h3>💰 Resumo Geral</h3>
-                    <p><strong>Total de Receitas:</strong> R$ ${totalEntrada.toLocaleString('pt-BR')}</p>
-                    <p><strong>Total de Despesas:</strong> R$ ${totalSaida.toLocaleString('pt-BR')}</p>
-                    <p><strong>Saldo Atual:</strong> R$ ${saldo.toLocaleString('pt-BR')}</p>
-                </div>
-                <div style="margin-bottom: 20px;">
-                    <h3>📝 Últimas Transações</h3>
-                    ${transacoes.slice(0, 10).map(t => `<div style="border-bottom: 1px solid #e2e8f0; padding: 8px 0;"><strong>${t.desc}</strong> - ${t.tipo === 'entrada' ? '+' : '-'} R$ ${t.valor.toLocaleString('pt-BR')} (${t.categoria})</div>`).join('')}
-                    ${transacoes.length === 0 ? '<p>Nenhuma transação registrada</p>' : ''}
-                </div>
-                <div>
-                    <h3>📅
+                <div style="
